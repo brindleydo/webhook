@@ -1,0 +1,10 @@
+{
+	"branch": "main",
+	"endpoint": "/webhook",
+	"port": 20016,
+	"path": "/var/www/html",
+	"command": [
+		"git --no-pager reset --hard origin/main",
+		"git --no-pager pull --force origin main"
+	]
+}

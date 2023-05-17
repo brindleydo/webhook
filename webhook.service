@@ -1,0 +1,12 @@
+[Unit]
+Description=Webhook Server, for automatically running commands
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/webhook/start.sh
+StandardInput=tty-force
+User=www-data
+
+[Install]
+WantedBy=multi-user.target
