@@ -17,6 +17,12 @@ log("OKAY", "Imported: webhook")
 import json
 log("OKAY", "Imported: json")
 
+import os
+log("OKAY", "Imported: os")
+
+import shutil
+log("OKAY", "Imported: shutil")
+
 from flask import Flask, abort
 log("OKAY", "Imported: flask")
 
@@ -28,6 +34,10 @@ log("OKAY", "Imported: multiprocessing")
 
 log("INFO", "Reading Configuration File")
 config = {}
+
+if (not os.path.isfile("config.json")):
+    log("WARN", "config.json not found! Creating from default")
+    shutil.copyfile("config.default.json", "config.json")
 
 with open("config.json", "r", encoding = "utf-8") as file:
 	try:
@@ -46,7 +56,14 @@ def index():
 
 @webhook.hook(event_type="ping")
 def on_ping(data):
-    log("INFO", "PONG!")
+    repo = data["repository"]["full_name"]
+
+    log("INFO", f"PONG! From {repo}")
+
+    if (repo not in config["repos"]):
+        log("WARN", f"No configuration found for repo {repo}. Configure it in config.json")
+        return f"No configuration found for {repo}!", 500
+
     return "PONG!", 200
 
 # On Push to repository event
@@ -66,10 +83,19 @@ def on_push(data):
     return "No Update", 200
 
 def handle_push(data):
-    for command in config["command"]:
-        log("INFO", f"Executing Command: {Fore.LIGHTYELLOW_EX}\"{command}\" {Fore.WHITE}at {Fore.LIGHTCYAN_EX}\"{config['path']}\"")
+    repo = data["repository"]["full_name"]
 
-        process = Popen(command.split(" "), cwd=config["path"], stdout=PIPE)
+    if (repo not in config["repos"]):
+        log("WARN", f"No configuration found for repo {repo}. Configure it in config.json")
+        return f"No configuration found for {repo}!", 500
+
+    commands = config["repos"][repo]["command"]
+    path = config["repos"][repo]["path"]
+
+    for command in commands:
+        log("INFO", f"Executing Command: {Fore.LIGHTYELLOW_EX}\"{command}\" {Fore.WHITE}at {Fore.LIGHTCYAN_EX}\"{path}\"")
+
+        process = Popen(command.split(" "), cwd=path, stdout=PIPE)
         (output, error) = process.communicate()
         exitCode = process.wait()
 

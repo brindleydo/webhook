@@ -6,7 +6,6 @@ import json
 import six
 from flask import abort, request
 
-
 class Webhook(object):
     """
     Construct a webhook on the given :code:`app`.
