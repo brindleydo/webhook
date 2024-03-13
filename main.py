@@ -69,26 +69,28 @@ def on_ping(data):
 # On Push to repository event
 @webhook.hook(event_type="push")
 def on_push(data):
-    log("INFO", f"Got push event at {data['ref']}, triggered by {data['pusher']['name']}")
-
-    # Parse target branch name
-    branch = data["ref"].split("/")[2]
-
-    if (config["branch"] == branch):
-        p = Process(target=handle_push, args=(data,))
-        p.start()
-
-        return "Success", 200
-
-    return "No Update", 200
-
-def handle_push(data):
     repo = data["repository"]["full_name"]
 
     if (repo not in config["repos"]):
         log("WARN", f"No configuration found for repo {repo}. Configure it in config.json")
         return f"No configuration found for {repo}!", 500
 
+    log("INFO", f"Received push from {repo} ref {data['ref']} triggered by {data['pusher']['name']}")
+
+    # Parse target branch name
+    branch = data["ref"].split("/")[2]
+
+    if (config["repos"][repo]["branch"] == branch):
+        p = Process(target=handle_push, args=(data,))
+        p.start()
+
+        return "Success", 200
+
+    log("INFO", "Skipping this webhook since the branch does not match.")
+    return "No Update", 200
+
+def handle_push(data):
+    repo = data["repository"]["full_name"]
     commands = config["repos"][repo]["command"]
     path = config["repos"][repo]["path"]
 
